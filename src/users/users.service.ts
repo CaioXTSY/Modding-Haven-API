@@ -75,4 +75,23 @@ export class UsersService {
     await this.prisma.user.delete({ where: { id } });
     return { deleted: true };
   }
+
+  async updateMe(userId: string, dto: { username?: string; email?: string }) {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(dto.username ? { username: dto.username } : {}),
+        ...(dto.email ? { email: dto.email } : {}),
+      },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+    return user;
+  }
 }
