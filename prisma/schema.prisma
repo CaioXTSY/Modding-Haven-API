@@ -15,6 +15,7 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   refreshTokens RefreshToken[]
+  mods      Mod[]
 }
 
 model RefreshToken {
@@ -38,4 +39,24 @@ model Category {
   slug      String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  mods      Mod[]
+}
+
+enum ModStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Mod {
+  id          String    @id @default(uuid())
+  name        String
+  slug        String    @unique
+  description String?
+  status      ModStatus @default(PENDING)
+  authorId    String
+  author      User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  categories  Category[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
