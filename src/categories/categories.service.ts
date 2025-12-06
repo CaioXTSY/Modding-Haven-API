@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -7,7 +7,13 @@ export class CategoriesService {
 
   list() {
     return this.prisma.category.findMany({
-      select: { id: true, name: true, slug: true, createdAt: true, updatedAt: true },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        createdAt: true,
+        updatedAt: true,
+      },
       orderBy: { name: 'asc' },
     });
   }
@@ -15,7 +21,13 @@ export class CategoriesService {
   async create(dto: { name: string; slug: string }) {
     return this.prisma.category.create({
       data: { name: dto.name, slug: dto.slug.toLowerCase() },
-      select: { id: true, name: true, slug: true, createdAt: true, updatedAt: true },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
   }
 
@@ -26,7 +38,13 @@ export class CategoriesService {
         ...(dto.name ? { name: dto.name } : {}),
         ...(dto.slug ? { slug: dto.slug.toLowerCase() } : {}),
       },
-      select: { id: true, name: true, slug: true, createdAt: true, updatedAt: true },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
     return category;
   }

@@ -1,9 +1,18 @@
-import { Body, Controller, Delete, Get, Param, Patch, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiParam, ApiTags } from '@nestjs/swagger';
 import { AdminGuard } from './admin.guard';
 import { UsersService } from 'src/users/users.service';
 import { UpdateUserDto } from 'src/users/dto/update-user.dto';
+import { UpdateUserRoleDto } from 'src/users/dto/update-user-role.dto';
 
 @ApiTags('admin')
 @Controller('admin')
@@ -27,6 +36,12 @@ export class AdminController {
   @ApiParam({ name: 'id', type: String })
   update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
     return this.usersService.update(id, dto);
+  }
+
+  @Patch('users/:id/role')
+  @ApiParam({ name: 'id', type: String })
+  updateRole(@Param('id') id: string, @Body() dto: UpdateUserRoleDto) {
+    return this.usersService.update(id, { role: dto.role });
   }
 
   @Delete('users/:id')

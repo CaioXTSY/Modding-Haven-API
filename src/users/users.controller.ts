@@ -21,8 +21,15 @@ export class UsersController {
   @Patch('me')
   @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
-  @ApiBody({ schema: { properties: { username: { type: 'string' }, email: { type: 'string' } } } })
-  updateMe(@GetUser() user: AuthUser, @Body() body: { username?: string; email?: string }) {
+  @ApiBody({
+    schema: {
+      properties: { username: { type: 'string' }, email: { type: 'string' } },
+    },
+  })
+  updateMe(
+    @GetUser() user: AuthUser,
+    @Body() body: { username?: string; email?: string },
+  ) {
     return this.usersService.updateMe(user.id, body);
   }
 
