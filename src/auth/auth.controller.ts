@@ -1,9 +1,9 @@
 import { Body, Controller, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
-import type { User } from '@prisma/client';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { GetUser } from './decorators/get-user.decorator';
+import type { AuthUser } from './decorators/get-user.decorator';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -26,14 +26,14 @@ export class AuthController {
   @Post('refresh')
   @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
-  refresh(@GetUser() user: User, @Body() refreshTokenDto: RefreshTokenDto) {
+  refresh(@GetUser() user: AuthUser, @Body() refreshTokenDto: RefreshTokenDto) {
     return this.authService.refreshToken(user.id, refreshTokenDto.refreshToken);
   }
 
   @Post('logout')
   @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
-  logout(@GetUser() user: User) {
+  logout(@GetUser() user: AuthUser) {
     return this.authService.logout(user.id);
   }
 }
