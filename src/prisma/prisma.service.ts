@@ -30,5 +30,12 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
 
   async onModuleInit() {
     await this.$connect();
+    const firstUser = await this.user.findFirst({ orderBy: { createdAt: 'asc' } });
+    if (firstUser) {
+      const admin = await this.user.findFirst({ where: { role: 'ADMIN' } });
+      if (!admin) {
+        await this.user.update({ where: { id: firstUser.id }, data: { role: 'ADMIN' } });
+      }
+    }
   }
 }

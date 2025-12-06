@@ -16,10 +16,13 @@ export class AuthService {
     registerDto: RegisterDto,
   ): Promise<{ accessToken: string; refreshToken: string }> {
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+    const total = await this.prisma.user.count();
+    const role = total === 0 ? 'ADMIN' : 'USER';
     const user = await this.prisma.user.create({
       data: {
         ...registerDto,
         password: hashedPassword,
+        role,
       },
     });
 
