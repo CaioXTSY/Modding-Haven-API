@@ -5,6 +5,12 @@ import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
+  get user() {
+    return super.user;
+  }
+  get refreshToken() {
+    return super.refreshToken;
+  }
   constructor(config: ConfigService) {
     const url = config.get<string>('DATABASE_URL');
     if (!url) {
