@@ -58,6 +58,7 @@ model Mod {
   author      User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
   categories  Category[]
   images      ModImage[]
+  versions    ModVersion[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
@@ -72,4 +73,35 @@ model ModImage {
   path      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+enum FileType {
+  ZIP
+  RAR
+  ASI
+  CLEO
+}
+
+model ModVersion {
+  id        String   @id @default(uuid())
+  modId     String
+  mod       Mod      @relation(fields: [modId], references: [id], onDelete: Cascade)
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  files     ModVersionFile[]
+}
+
+model ModVersionFile {
+  id         String   @id @default(uuid())
+  versionId  String
+  version    ModVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  filename   String
+  mime       String
+  size       Int
+  path       String
+  type       FileType
+  primary    Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }

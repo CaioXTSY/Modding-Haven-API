@@ -297,4 +297,229 @@ export class ModsService {
     }
     return { deleted: true };
   }
+
+  async createVersion(slug: string, user: AuthUser, dto: { name: string }) {
+    const mod = await this.prisma.mod.findUnique({ where: { slug } });
+    if (!mod) throw new NotFoundException();
+    const isAdmin = user.role === 'ADMIN';
+    const isAuthor = mod.authorId === user.id;
+    if (!isAdmin && !isAuthor) throw new ForbiddenException();
+    const version = await this.prisma.modVersion.create({
+      data: { modId: mod.id, name: dto.name },
+      select: {
+        id: true,
+        name: true,
+        createdAt: true,
+        updatedAt: true,
+        files: {
+          select: {
+            id: true,
+            filename: true,
+            mime: true,
+            size: true,
+            path: true,
+            type: true,
+            primary: true,
+          },
+        },
+      },
+    });
+    return {
+      ...version,
+      files: version.files.map((f) => ({ ...f, url: `/uploads/${f.path}` })),
+    };
+  }
+
+  async listVersions(slug: string, user?: AuthUser) {
+    const mod = await this.prisma.mod.findUnique({ where: { slug } });
+    if (!mod) throw new NotFoundException();
+    const isAdmin = user?.role === 'ADMIN';
+    const isAuthor = user ? mod.authorId === user.id : false;
+    if (!isAdmin && !isAuthor && mod.status !== 'APPROVED') {
+      throw new NotFoundException();
+    }
+    const versions = await this.prisma.modVersion.findMany({
+      where: { modId: mod.id },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        name: true,
+        createdAt: true,
+        updatedAt: true,
+        files: {
+          select: {
+            id: true,
+            filename: true,
+            mime: true,
+            size: true,
+            path: true,
+            type: true,
+            primary: true,
+          },
+        },
+      },
+    });
+    return versions.map((v) => ({
+      ...v,
+      files: v.files.map((f) => ({ ...f, url: `/uploads/${f.path}` })),
+    }));
+  }
+
+  async deleteVersion(slug: string, versionId: string, user: AuthUser) {
+    const mod = await this.prisma.mod.findUnique({ where: { slug } });
+    if (!mod) throw new NotFoundException();
+    const isAdmin = user.role === 'ADMIN';
+    const isAuthor = mod.authorId === user.id;
+    if (!isAdmin && !isAuthor) throw new ForbiddenException();
+    const version = await this.prisma.modVersion.findUnique({
+      where: { id: versionId },
+    });
+    if (!version || version.modId !== mod.id) throw new NotFoundException();
+    const files = await this.prisma.modVersionFile.findMany({
+      where: { versionId },
+    });
+    for (const f of files) {
+      const abs = path.join(process.cwd(), 'uploads', f.path);
+      try {
+        fs.unlinkSync(abs);
+      } catch (e) {
+        void e;
+      }
+    }
+    await this.prisma.modVersionFile.deleteMany({ where: { versionId } });
+    await this.prisma.modVersion.delete({ where: { id: versionId } });
+    return { deleted: true };
+  }
+
+  private extToType(ext: string): 'ZIP' | 'RAR' | 'ASI' | 'CLEO' {
+    switch (ext) {
+      case '.zip':
+        return 'ZIP';
+      case '.rar':
+        return 'RAR';
+      case '.asi':
+        return 'ASI';
+      case '.cleo':
+        return 'CLEO';
+      default:
+        return 'ZIP';
+    }
+  }
+
+  async addVersionFile(
+    slug: string,
+    versionId: string,
+    user: AuthUser,
+    file: {
+      filename: string;
+      mimetype: string;
+      size: number;
+      path: string;
+      originalname?: string;
+    },
+    primary?: boolean,
+  ) {
+    const mod = await this.prisma.mod.findUnique({ where: { slug } });
+    if (!mod) throw new NotFoundException();
+    const isAdmin = user.role === 'ADMIN';
+    const isAuthor = mod.authorId === user.id;
+    if (!isAdmin && !isAuthor) throw new ForbiddenException();
+    const version = await this.prisma.modVersion.findUnique({
+      where: { id: versionId },
+    });
+    if (!version || version.modId !== mod.id) throw new NotFoundException();
+
+    const normalized = file.path.replace(/\\/g, '/');
+    const marker = '/uploads/';
+    const idx = normalized.indexOf(marker);
+    const relPath =
+      idx >= 0
+        ? normalized.slice(idx + marker.length)
+        : path.basename(normalized);
+    const ext = path.extname(file.originalname ?? file.filename).toLowerCase();
+    const type = this.extToType(ext);
+
+    const existingCount = await this.prisma.modVersionFile.count({
+      where: { versionId },
+    });
+    const makePrimary = existingCount === 0 ? true : !!primary;
+    if (makePrimary && existingCount > 0) {
+      await this.prisma.modVersionFile.updateMany({
+        where: { versionId },
+        data: { primary: false },
+      });
+    }
+
+    const created = await this.prisma.modVersionFile.create({
+      data: {
+        versionId,
+        filename: file.filename,
+        mime: file.mimetype,
+        size: file.size,
+        path: relPath,
+        type,
+        primary: makePrimary,
+      },
+      select: {
+        id: true,
+        filename: true,
+        mime: true,
+        size: true,
+        path: true,
+        type: true,
+        primary: true,
+      },
+    });
+    return { ...created, url: `/uploads/${created.path}` };
+  }
+
+  async removeVersionFile(
+    slug: string,
+    versionId: string,
+    fileId: string,
+    user: AuthUser,
+  ) {
+    const mod = await this.prisma.mod.findUnique({ where: { slug } });
+    if (!mod) throw new NotFoundException();
+    const isAdmin = user.role === 'ADMIN';
+    const isAuthor = mod.authorId === user.id;
+    if (!isAdmin && !isAuthor) throw new ForbiddenException();
+    const version = await this.prisma.modVersion.findUnique({
+      where: { id: versionId },
+    });
+    if (!version || version.modId !== mod.id) throw new NotFoundException();
+
+    const filesLeft = await this.prisma.modVersionFile.count({
+      where: { versionId },
+    });
+    if (filesLeft <= 1)
+      throw new ForbiddenException('Version must have at least one file');
+
+    const file = await this.prisma.modVersionFile.findUnique({
+      where: { id: fileId },
+    });
+    if (!file || file.versionId !== versionId) throw new NotFoundException();
+
+    await this.prisma.modVersionFile.delete({ where: { id: fileId } });
+    const abs = path.join(process.cwd(), 'uploads', file.path);
+    try {
+      fs.unlinkSync(abs);
+    } catch (e) {
+      void e;
+    }
+
+    if (file.primary) {
+      const next = await this.prisma.modVersionFile.findFirst({
+        where: { versionId },
+        orderBy: { createdAt: 'asc' },
+      });
+      if (next)
+        await this.prisma.modVersionFile.update({
+          where: { id: next.id },
+          data: { primary: true },
+        });
+    }
+
+    return { deleted: true };
+  }
 }

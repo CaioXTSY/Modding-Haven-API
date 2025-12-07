@@ -159,4 +159,113 @@ export class ModsController {
   ) {
     return this.mods.removeImage(slug, id, user);
   }
+
+  @Post(':slug/versions')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiParam({ name: 'slug', type: String })
+  createVersion(
+    @Param('slug') slug: string,
+    @GetUser() user: AuthUser,
+    @Body() dto: { name: string },
+  ) {
+    return this.mods.createVersion(slug, user, dto);
+  }
+
+  @Get(':slug/versions')
+  @UseGuards(OptionalAuthGuard)
+  @ApiParam({ name: 'slug', type: String })
+  listVersions(@Param('slug') slug: string, @GetUser() user?: AuthUser) {
+    return this.mods.listVersions(slug, user);
+  }
+
+  @Delete(':slug/versions/:id')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiParam({ name: 'slug', type: String })
+  @ApiParam({ name: 'id', type: String })
+  deleteVersion(
+    @Param('slug') slug: string,
+    @Param('id') id: string,
+    @GetUser() user: AuthUser,
+  ) {
+    return this.mods.deleteVersion(slug, id, user);
+  }
+
+  @Post(':slug/versions/:versionId/files')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiParam({ name: 'slug', type: String })
+  @ApiParam({ name: 'versionId', type: String })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: (
+          req: Request,
+          file: UploadedFileType,
+          cb: (error: Error | null, destination: string) => void,
+        ) => {
+          const params = req.params as Record<string, string>;
+          const dest = path.join(
+            process.cwd(),
+            'uploads',
+            'mods',
+            params.slug,
+            'versions',
+            params.versionId,
+            'files',
+          );
+          fs.mkdirSync(dest, { recursive: true });
+          (cb as (error: Error | null, destination: string) => void)(
+            null,
+            dest,
+          );
+        },
+        filename: (
+          req: Request,
+          file: UploadedFileType,
+          cb: (error: Error | null, filename: string) => void,
+        ) => {
+          const ext = path.extname(file.originalname ?? '').toLowerCase();
+          const name = `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
+          (cb as (error: Error | null, filename: string) => void)(null, name);
+        },
+      }),
+      limits: { fileSize: 500 * 1024 * 1024 },
+      fileFilter: (
+        req: Request,
+        file: UploadedFileType,
+        cb: (error: Error | null, acceptFile: boolean) => void,
+      ) => {
+        const ext = path.extname(file.originalname ?? '').toLowerCase();
+        const ok = ['.zip', '.rar', '.asi', '.cleo'].includes(ext);
+        cb(null, ok);
+      },
+    }),
+  )
+  uploadVersionFile(
+    @Param('slug') slug: string,
+    @Param('versionId') versionId: string,
+    @GetUser() user: AuthUser,
+    @UploadedFile() file: UploadedFileType,
+    @Query('primary') primary?: string,
+  ) {
+    const isPrimary = primary === 'true' || primary === '1';
+    return this.mods.addVersionFile(slug, versionId, user, file, isPrimary);
+  }
+
+  @Delete(':slug/versions/:versionId/files/:fileId')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiParam({ name: 'slug', type: String })
+  @ApiParam({ name: 'versionId', type: String })
+  @ApiParam({ name: 'fileId', type: String })
+  removeVersionFile(
+    @Param('slug') slug: string,
+    @Param('versionId') versionId: string,
+    @Param('fileId') fileId: string,
+    @GetUser() user: AuthUser,
+  ) {
+    return this.mods.removeVersionFile(slug, versionId, fileId, user);
+  }
 }
