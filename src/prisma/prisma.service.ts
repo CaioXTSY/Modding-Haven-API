@@ -11,6 +11,21 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
   get refreshToken() {
     return super.refreshToken;
   }
+  get category() {
+    return super.category;
+  }
+  get mod() {
+    return super.mod;
+  }
+  get modImage() {
+    return super.modImage;
+  }
+  get modVersion() {
+    return super.modVersion;
+  }
+  get modVersionFile() {
+    return super.modVersionFile;
+  }
   constructor(config: ConfigService) {
     const url = config.get<string>('DATABASE_URL');
     if (!url) {
