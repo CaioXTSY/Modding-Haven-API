@@ -57,6 +57,19 @@ model Mod {
   authorId    String
   author      User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
   categories  Category[]
+  images      ModImage[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+}
+
+model ModImage {
+  id        String   @id @default(uuid())
+  modId     String
+  mod       Mod      @relation(fields: [modId], references: [id], onDelete: Cascade)
+  filename  String
+  mime      String
+  size      Int
+  path      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

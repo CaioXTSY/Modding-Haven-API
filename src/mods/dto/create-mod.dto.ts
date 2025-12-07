@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsArray, IsOptional, IsString, MinLength } from 'class-validator';
 
 export class CreateModDto {
   @ApiProperty({ example: 'Ferramenta de Extração' })
@@ -7,7 +7,10 @@ export class CreateModDto {
   @MinLength(3)
   name: string;
 
-  @ApiProperty({ example: 'Extrai arquivos de mods rapidamente', required: false })
+  @ApiProperty({
+    example: 'Extrai arquivos de mods rapidamente',
+    required: false,
+  })
   @IsString()
   @IsOptional()
   description?: string;
