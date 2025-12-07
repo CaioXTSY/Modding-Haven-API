@@ -54,6 +54,7 @@ model Mod {
   slug        String    @unique
   description String?
   status      ModStatus @default(PENDING)
+  rejectionReason String?
   authorId    String
   author      User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
   categories  Category[]

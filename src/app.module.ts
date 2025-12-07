@@ -7,6 +7,7 @@ import { UsersModule } from './users/users.module';
 import { AdminModule } from './admin/admin.module';
 import { CategoriesModule } from './categories/categories.module';
 import { ModsModule } from './mods/mods.module';
+import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { ModsModule } from './mods/mods.module';
     AdminModule,
     CategoriesModule,
     ModsModule,
+    PrismaModule,
   ],
   controllers: [AppController],
   providers: [AppService],
